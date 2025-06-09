@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gantt Chart z Excela</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+        }
+
+        #menu {
+            padding: 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #menu label {
+            margin-right: 10px;
+        }
+
+        #menu select,
+        #menu input[type="file"] {
+            margin-right: 20px;
+        }
+
+        #content {
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="menu">
+        <label>Upload Excel: <input type="file" id="excelFile" accept=".xlsx" /></label>
+
+        <label>Sheet:
+            <select id="sheetSelect"></select>
+        </label>
+
+        <label>Start col:
+            <select id="startCol">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+            </select>
+        </label>
+
+        <label>End col:
+            <select id="endCol">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+            </select>
+        </label>
+
+        <label>Status col:
+            <select id="statusCol">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+            </select>
+        </label>
+
+        <button onclick="handleRender()">Render</button>
+
+        <label><input type="checkbox" class="color-filter" value="green" checked> Zielone</label>
+        <label><input type="checkbox" class="color-filter" value="red" checked> Czerwone</label>
+        <label><input type="checkbox" class="color-filter" value="gray" checked> Szare</label>
+
+    </div>
+
+    <div id="content">
+        <canvas id="ganttChart" width="1000" height="600"></canvas>
+    </div>
+
+    <script>
+        let workbook = null;
+        let excelData = [];
+        let fullTaskList = [];
+
+        document.getElementById('excelFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                workbook = XLSX.read(data, { type: 'array' });
+
+                const sheetSelect = document.getElementById('sheetSelect');
+                sheetSelect.innerHTML = '';
+                workbook.SheetNames.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    sheetSelect.appendChild(opt);
+                });
+
+                loadSelectedSheet();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('sheetSelect').addEventListener('change', loadSelectedSheet);
+
+        function loadSelectedSheet() {
+            const sheetName = document.getElementById('sheetSelect').value;
+            const sheet = workbook.Sheets[sheetName];
+            excelData = XLSX.utils.sheet_to_json(sheet, { header: "A", raw: true });
+            console.log("Wczytano arkusz:", sheetName, excelData);
+        }
+
+        function parseExcelDateUniversal(raw) {
+            if (typeof raw === "number") {
+                const utc = new Date((raw - 25569) * 86400 * 1000);
+                return new Date(
+                    utc.getUTCFullYear(),
+                    utc.getUTCMonth(),
+                    utc.getUTCDate(),
+                    utc.getUTCHours(),
+                    utc.getUTCMinutes(),
+                    utc.getUTCSeconds()
+                );
+            }
+
+            if (typeof raw === "string") {
+                const cleaned = raw.trim().replace(/\s+/, ' ');
+                const parts = cleaned.split(' ');
+                if (parts.length !== 2) return null;
+
+                const [datePart, timePartRaw] = parts;
+                const dateParts = datePart.split('.');
+                if (dateParts.length !== 3) return null;
+
+                const [d, m, y] = dateParts;
+                const day = String(d).padStart(2, '0');
+                const month = String(m).padStart(2, '0');
+                const year = String(y).padStart(4, '20');
+
+                let timePart = timePartRaw;
+                if (/^\d{1,2}:\d{2}$/.test(timePartRaw)) timePart += ":00";
+
+                const iso = `${year}-${month}-${day}T${timePart}`;
+                const date = new Date(iso);
+                return isNaN(date.getTime()) ? null : date;
+            }
+
+            return null;
+        }
+
+        function handleRender() {
+            const startCol = document.getElementById('startCol').value;
+            const endCol = document.getElementById('endCol').value;
+            const statusCol = document.getElementById('statusCol').value;
+
+            if (excelData.length === 0) return alert("Najpierw załaduj dane z Excela.");
+
+            const tasks = excelData
+                .map((row, index) => {
+                    const rawStart = row[startCol];
+                    const rawEnd = row[endCol];
+                    const parsedStart = parseExcelDateUniversal(rawStart);
+                    const parsedEnd = parseExcelDateUniversal(rawEnd);
+                    const status = String(row[statusCol] || "").toLowerCase();
+
+                    if (!parsedStart || !parsedEnd) return null;
+
+                    return {
+                        label: `Zadanie ${index + 1}`,
+                        start: parsedStart,
+                        end: parsedEnd,
+                        color: status.includes("up") ? "green" :
+                            status.includes("down") ? "red" : "gray"
+                    };
+                })
+                .filter(Boolean);
+
+            fullTaskList = tasks;
+            drawGanttChart(tasks);
+        }
+
+        function applyColorFilter() {
+            const checkedColors = Array.from(document.querySelectorAll('.color-filter:checked'))
+                .map(cb => cb.value);
+
+            const filtered = fullTaskList.filter(task => checkedColors.includes(task.color));
+            drawGanttChart(filtered);
+        }
+
+
+        let ganttChart = null;
+
+
+        function drawGanttChart(tasks) {
+            if (window.ganttChart instanceof Chart) {
+                window.ganttChart.destroy();
+            }
+
+            const minStart = tasks.reduce((min, t) => !min || t.start < min ? t.start : min, null);
+            const labels = [];
+            const offsetData = [];
+            const barData = [];
+
+            tasks.forEach((t, i) => {
+                const label = t.label;
+                labels.push(label);
+                const offset = (t.start - minStart) / 60000;
+                const duration = (t.end - t.start) / 60000;
+
+                offsetData.push({ x: offset, y: label });
+                barData.push({ x: duration, y: label, backgroundColor: t.color });
+            });
+
+            const ctx = document.getElementById('ganttChart').getContext('2d');
+            window.ganttChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Offset',
+                            data: offsetData,
+                            backgroundColor: 'rgba(0,0,0,0)',
+                            stack: 'stack1'
+                        },
+                        {
+                            label: 'Zadania',
+                            data: barData,
+                            backgroundColor: barData.map(b => b.backgroundColor),
+                            stack: 'stack1'
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: `Czas (minuty od ${minStart.toLocaleTimeString()})`
+                            }
+                        },
+                        y: {
+                            reverse: true,
+                            title: {
+                                display: true,
+                                text: 'Zadania'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => {
+                                    const i = ctx.dataIndex;
+                                    const task = tasks[i];
+                                    return `${task.start.toLocaleTimeString()} - ${task.end.toLocaleTimeString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.querySelectorAll('.color-filter').forEach(cb => {
+            cb.addEventListener('change', applyColorFilter);
+        });
+
+    </script>
+</body>
+
+</html>
