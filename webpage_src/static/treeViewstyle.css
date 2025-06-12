@@ -1,0 +1,488 @@
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+}
+
+.header {
+    background-color: #34495e;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 18px;
+    width: 100%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: relative; /* Zapewnia, że elementy headera będą zawsze na górze */
+    z-index: 1000;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.upload-controls {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #1f6690;
+}
+
+.custom-file-upload {
+    display: inline-block;
+    position: relative;
+}
+
+.custom-file-upload label {
+    display: flex;
+    align-items: center;
+    background-color: #2980b9;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+    gap: 8px;
+}
+
+.custom-file-upload label:hover {
+    background-color: #1f6690;
+}
+
+.custom-file-upload input {
+    display: none;
+}
+
+.upload-icon {
+    font-size: 18px;
+}
+
+
+.container {
+    display: flex;
+    width: 90%;
+    height: calc(100vh - 70px);
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-top: 10px;
+    position: relative;
+}
+
+.tree-container {
+    width: 30%;
+    background-color: #f7f9fa;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 2px solid #dfe6e9;
+    height: 100%;
+}
+
+.details-container {
+    width: 70%;
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+    background-color: #ffffff;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+/* File tree styles */
+.file-tree {
+    list-style: none;
+    padding-left: 0;
+    overflow-y: auto;
+    max-height: 100%;
+    overflow-y: auto;  /* Pozostawia pionowy pasek przewijania */
+    overflow-x: hidden; /* Usuwa poziomy pasek przewijania */
+    scrollbar-width: thin; /* Opcjonalnie: cieńszy pasek przewijania w Firefox */
+}
+
+/* Dla przeglądarek WebKit (Chrome, Edge, Safari) */
+.file-tree::-webkit-scrollbar {
+    width: 8px; /* Opcjonalnie: dostosowanie szerokości */
+}
+
+.file-tree::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2); /* Kolor uchwytu paska przewijania */
+    border-radius: 4px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.1s;
+    position: relative;
+}
+
+.file-item:hover {
+    background-color: #7abdda;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Dodajemy cień zamiast skalowania */
+    transition: background-color 0.3s, box-shadow 0.1s;
+}
+
+.file-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 10px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+}
+
+.folder-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23007bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.document-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.file-item.fail .folder-icon,
+.file-item.fail .document-icon {
+    filter: hue-rotate(0deg) saturate(200%) brightness(80%);
+}
+
+.folder-count {
+    position: absolute;
+    top: 0;
+    right: -5px;
+    background: red;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 50%;
+}
+
+.nested-list {
+    list-style: none;
+    padding-left: 20px;
+    display: none;
+}
+
+.nested-list.active {
+    display: block;
+}
+
+.folder {
+    font-weight: 600;
+}
+
+.file-item.folder {
+    font-weight: bold;
+}
+
+.file-item.folder.active .nested-list {
+    display: block;
+}
+
+.toggle-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    transition: transform 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'%3E%3C/polyline%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.toggle-icon.open {
+    transform: rotate(90deg);
+}
+
+/* Log details styles */
+.log-details {
+    padding: 15px;
+    border: 1px solid #bdc3c7;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: 100%;
+    font-size: 14px;
+}
+
+.log-entry {
+    padding: 8px;
+    border-bottom: 1px solid #dfe6e9;
+    transition: background-color 0.3s;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry:hover {
+    background-color: #7abdda;
+}
+
+.metadata-container {
+    width: 35%;
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+    background-color: #f0f0f0;
+    border-left: 2px solid #dfe6e9;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+/* Log details styles */
+.log-details {
+    padding: 15px;
+    border: 1px solid #bdc3c7;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: 100%;
+    font-size: 14px;
+
+    z-index: 10;         /* Zapewnia, że logi będą na wierzchu */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Lekki cień dla widoczności */
+}
+
+.file-metadata {
+    font-size: 14px;
+}
+
+.file-metadata h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.file-metadata p {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.search-box {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.autocomplete-list {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: calc(100% - 20px);
+    max-width: 300px; /* Ustawia maksymalną szerokość listy */
+    max-height: 150px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 5px;
+    margin: 2px 0;
+    z-index: 1000;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    display: none; /* Domyślnie ukryte, dopóki użytkownik nie wpisze tekstu */
+}
+
+.autocomplete-item {
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.autocomplete-item:hover {
+    background: #7abdda;
+}
+
+/* MENU */
+/* Ukryte menu pod nagłówkiem */
+.hidden-menu {
+    position: top;
+    top: 0%; /* Menu znajduje się tuż pod headerem, ale jest schowane */
+    left: 0;
+    width: 100%;
+    background: #34495e;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    gap: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-100%); /* Domyślnie schowane nad ekranem */
+    transition: transform 0.3s ease-in-out;
+    z-index: 999; /* Niżej niż header */
+}
+
+/* Efekt wysuwania */
+.hidden-menu.active {
+    transform: translateY(120%); /* Menu wysuwa się spod headera */
+}
+
+/* Styl przycisku Menu */
+#menuToggle {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+#menuToggle:hover {
+    background: #1f2a36;
+}
+
+/* Styl przycisków w menu */
+.menu-button {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.menu-button:hover {
+    background: #1f2a36;
+}
+
+/* Tło modala */
+/* Domyślnie okno jest ukryte */
+.modal {
+    display: none; /* Teraz nie jest widoczne od razu */
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========= NIGHT MODE ========= */
+/* Tryb nocny */
+.night-mode {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+/* Zmiana kolorów nagłówka */
+.night-mode .header {
+    background-color: #1f2a36;
+}
+
+/* Zmiana koloru kontenera */
+.night-mode .container {
+    background-color: #34495e;
+    color: white;
+}
+
+/* Zmiana koloru drzewa plików */
+.night-mode .file-tree {
+    background-color: #2c3e50;
+    color: white;
+}
+
+/* Zmiana koloru log details */
+.night-mode .log-details {
+    background-color: #3a4b5c;
+    color: white;
+    border-color: #56687a;
+}
+
+/* Zmiana koloru paska metadanych */
+.night-mode .metadata-container {
+    background-color: #3b4c5e;
+    color: white;
+}
+
+/* Przycisk night mode */
+.night-mode .menu-button {
+    background: #4a6379;
+    color: #ffffff;
+}
+
+.night-mode .menu-button:hover {
+    background: #5a748c;
+}
+
+/* Okno modalne w trybie nocnym */
+.night-mode .modal-content {
+    background-color: #2c3e50;
+    color: white;
+}
+
+/* Przycisk kopiowania w trybie nocnym */
+.night-mode .copy-btn {
+    background: #56687a;
+    color: white;
+}
+
+.night-mode .copy-btn:hover {
+    background: #6789a5;
+}
+
+.night-mode #searchInput{
+    background: #56687a;
+    color: white;
+}
+
+.night-mode .autocomplete-list{
+    background: #56687a;
+    color: white;
+}
+
+.night-mode .file-item:hover {
+    background-color: #7abdda;
+    transform: scale(1.02);
+}

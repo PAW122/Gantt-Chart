@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log File Analyzer [Pim - Live]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="static/themify-icons/themify-icons.css">
+    <link rel="stylesheet" href="static/treeViewstyle.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .chart-container {
+            width: 100%;
+            min-height: 500px;
+        }
+
+        #pimChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #chartsContainer {
+            max-height: calc(100vh - 74px);
+            overflow-y: auto;
+            width: 90%;
+            padding: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="dropdownMenu" class="hidden-menu">
+        <button class="menu-button" id="homeButton">🏠 Home</button>
+        <button class="menu-button" id="contactButton">✉️ Contact</button>
+    </div>
+    <div class="header">
+        <h1>Log File Analyzer [Pim - Single]</h1>
+
+        <div class="custom-file-upload">
+            <button id="selectFolderButton" class="menu-button">📂 Wybierz folder</button>
+        </div>
+
+
+        <!-- Przycisk Copy Link początkowo wyłączony -->
+        <button id="copyLinkButton" disabled
+            style="background-color: #d3d3d3; cursor: not-allowed; margin-left: 10px;">Copy Link</button>
+        <button id="menuToggle">☰ Menu</button>
+    </div>
+
+
+
+    <div class="container">
+        <div id="chartsContainer" style="width: 90%; padding-top: 20px;"></div>
+
+
+        <div class="metadata-container" style="display: none;">
+            <h2>File Metadata</h2>
+            <p><strong>Product Description:</strong> <span id="productDescription"></span></p>
+            <p><strong>Product Number:</strong> <span id="productNumber"></span></p>
+            <p><strong>R-State:</strong> <span id="rState"></span></p>
+            <p><strong>Serial Number:</strong> <span id="serialNumber"></span></p>
+            <p><strong>Station ID:</strong> <span id="stationId"></span></p>
+            <p><strong>Test Plan:</strong> <span id="testPlan"></span></p>
+            <p><strong>Test Type:</strong> <span id="testType"></span></p>
+            <p><strong>Criteria:</strong> <span id="criteria"></span></p>
+        </div>
+    </div>
+
+    <script src="static/menu.js"></script>
+    <script src="static/fileUploadLive.js"></script>
+
+    <script>
+        const chartsContainer = document.getElementById("chartsContainer");
+        const previouslySent = new Map();
+
+        // wywołanie renderu wykresu jeżeli wymagane
+        document.getElementById("selectFolderButton").addEventListener("click", async () => {
+            const dirHandle = await window.showDirectoryPicker();
+
+            setInterval(async () => {
+                for await (const [name, handle] of dirHandle.entries()) {
+                    if (handle.kind !== "file" || !name.endsWith(".zip")) continue;
+
+                    const file = await handle.getFile();
+                    const size = file.size;
+
+                    if (previouslySent.get(name) !== size) {
+                        previouslySent.set(name, size);
+
+                        try {
+                            const { results: graphList, aas, p } = await processZipFile(file);
+
+                            graphList.forEach((graph, i) => {
+                                renderGraph({
+                                    ...graph,
+                                    source: name,
+                                    aas,
+                                    p
+                                }, i);
+
+                            });
+
+                        } catch (err) {
+                            console.error(`❌ Błąd przetwarzania pliku ${name}:`, err);
+                        }
+                    }
+                }
+            }, 2000); // co 2 sekundy
+        });
+
+
+        // renderowanie wykresu
+        function renderGraph(graph, graphIndex) {
+            const parsedData = graph.data;
+            const sourceFile = graph.source || "Unknown";
+            const aas = graph.aas || "–";
+            const p = graph.p || "–";
+
+
+            let group = document.querySelector(`.file-group[data-source="${sourceFile}"]`);
+            if (!group) {
+                group = document.createElement("div");
+                group.className = "file-group";
+                group.dataset.source = sourceFile;
+                group.style.margin = "40px 0";
+                group.style.borderTop = "3px solid #555";
+                group.style.paddingTop = "20px";
+
+                const label = document.createElement("h2");
+                label.textContent = `Plik: ${sourceFile}`;
+                label.style.fontFamily = "Roboto Condensed, sans-serif";
+                label.style.textAlign = "left";
+                label.style.marginBottom = "10px";
+
+                group.appendChild(label);
+                chartsContainer.appendChild(group);
+            }
+
+
+            const container = document.createElement("div");
+            container.className = "chart-container";
+            container.style.marginBottom = "40px";
+            container.style.height = "300px";
+            container.style.border = "1px solid #ccc";
+            container.style.borderRadius = "8px";
+            container.style.padding = "10px";
+            container.style.backgroundColor = "white";
+
+            const title = document.createElement("h3");
+            title.innerHTML = `${graph.name}<br><small>AAS: ${aas || '–'} | P: ${p || '–'}</small>`;
+            title.style.textAlign = "center";
+
+            const canvas = document.createElement("canvas");
+            canvas.id = `pimChart_${graphIndex}`;
+
+            container.appendChild(title);
+            container.appendChild(canvas);
+            group.appendChild(container);
+
+            let allValues = [];
+            Object.values(parsedData.series).forEach(arr => allValues.push(...arr));
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            let range = max - min;
+            let margin = range === 0 ? 0.1 : range * 0.1;
+            const yMin = min - margin;
+            const yMax = max + margin;
+
+            const ctx = canvas.getContext("2d");
+            const datasets = Object.keys(parsedData.series)
+                .filter(key => key.toLowerCase() !== "average") // pomijamy średnią
+                .map((key, index) => ({
+                    label: key,
+                    data: parsedData.series[key],
+                    fill: false,
+                    borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+                    tension: 0.2
+                }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: parsedData.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `${ctx.dataset.label}: ${ctx.formattedValue} dB`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: yMin,
+                            max: yMax,
+                            title: { display: true, text: "IPWR" }
+                        },
+                        x: {
+                            title: { display: true, text: "Seconds" }
+                        }
+                    }
+                }
+            });
+
+            // Scroll do dołu, po dodaniu wykresu
+            container.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+</body>
+
+</html>

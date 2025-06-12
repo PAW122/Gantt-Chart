@@ -43,13 +43,14 @@
             <select id="sheetSelect"></select>
         </label>
 
-        <label>Start col:
+       <label>Start col:
             <select id="startCol">
                 <option value="A">A</option>
                 <option value="B">B</option>
                 <option value="C">C</option>
             </select>
         </label>
+
 
         <label>End col:
             <select id="endCol">
@@ -78,34 +79,48 @@
     <div id="content">
         <canvas id="ganttChart" width="1000" height="600"></canvas>
     </div>
-
+-
     <script>
         let workbook = null;
         let excelData = [];
         let fullTaskList = [];
 
         document.getElementById('excelFile').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    	const file = e.target.files[0];
+   	if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                workbook = XLSX.read(data, { type: 'array' });
+   	 const reader = new FileReader();
+   	 reader.onload = function (e) {
+       		 const data = new Uint8Array(e.target.result);
+       		 workbook = XLSX.read(data, { type: 'array' });
 
-                const sheetSelect = document.getElementById('sheetSelect');
-                sheetSelect.innerHTML = '';
-                workbook.SheetNames.forEach(name => {
-                    const opt = document.createElement('option');
-                    opt.value = name;
-                    opt.textContent = name;
-                    sheetSelect.appendChild(opt);
-                });
+       		 const sheetSelect = document.getElementById('sheetSelect');
+      		 sheetSelect.innerHTML = '';
 
-                loadSelectedSheet();
-            };
-            reader.readAsArrayBuffer(file);
-        });
+       		 let defaultSheetIndex = workbook.SheetNames.length - 1;
+       		 workbook.SheetNames.forEach((name, index) => {
+       		     const opt = document.createElement('option');
+       		     opt.value = name;
+       		     opt.textContent = name;
+       		     sheetSelect.appendChild(opt);
+      		      	if (name === "Sheet3") {
+       		        	defaultSheetIndex = index;
+         		}
+      		  });
+
+     		  // Ustaw domyślnie Sheet3 lub ostatni
+      		  sheetSelect.selectedIndex = defaultSheetIndex;
+
+      		  // Ustaw domyślne kolumny
+     		  document.getElementById('startCol').value = 'A';
+      		  document.getElementById('endCol').value = 'B';
+     		  document.getElementById('statusCol').value = 'C';
+
+     		   loadSelectedSheet();
+    		};
+    		reader.readAsArrayBuffer(file);
+	});
+
 
         document.getElementById('sheetSelect').addEventListener('change', loadSelectedSheet);
 
@@ -206,16 +221,20 @@
             const labels = [];
             const offsetData = [];
             const barData = [];
+const colors = [];
+
 
             tasks.forEach((t, i) => {
-                const label = t.label;
-                labels.push(label);
-                const offset = (t.start - minStart) / 60000;
-                const duration = (t.end - t.start) / 60000;
+    const label = t.label;
+    labels.push(label);
+    const offset = (t.start - minStart) / 60000;
+    const duration = (t.end - t.start) / 60000;
 
-                offsetData.push({ x: offset, y: label });
-                barData.push({ x: duration, y: label, backgroundColor: t.color });
-            });
+    offsetData.push({ x: offset, y: label });
+    barData.push({ x: duration, y: label });
+    colors.push(t.color);
+});
+
 
             const ctx = document.getElementById('ganttChart').getContext('2d');
             window.ganttChart = new Chart(ctx, {
@@ -232,7 +251,7 @@
                         {
                             label: 'Zadania',
                             data: barData,
-                            backgroundColor: barData.map(b => b.backgroundColor),
+                            backgroundColor: colors,
                             stack: 'stack1'
                         }
                     ]

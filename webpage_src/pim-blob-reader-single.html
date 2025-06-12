@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log File Analyzer [Pim - Single]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="static/themify-icons/themify-icons.css">
+    <link rel="stylesheet" href="static/treeViewstyle.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        .chart-container {
+            width: 100%;
+            min-height: 500px;
+        }
+
+        #pimChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #chartsContainer {
+            max-height: calc(100vh - 74px);
+            overflow-y: auto;
+            width: 90%;
+            padding: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="dropdownMenu" class="hidden-menu">
+        <button class="menu-button" id="homeButton">🏠 Home</button>
+        <!-- <button class="menu-button" id="contactButton">✉️ Contact</button> -->
+    </div>
+    <div class="header">
+        <h1>Log File Analyzer [Pim - Single]</h1>
+
+        <div class="custom-file-upload">
+            <label for="uploadFile">
+                <span class="upload-icon">📁</span> Wybierz plik
+            </label>
+            <input type="file" id="uploadFile" accept="" />
+        </div>
+        <!-- Przycisk Copy Link początkowo wyłączony -->
+        <button id="copyLinkButton" disabled
+            style="background-color: #d3d3d3; cursor: not-allowed; margin-left: 10px;">Copy Link</button>
+        <button id="menuToggle">☰ Menu</button>
+        <button id="uploadButton">Upload File</button>
+    </div>
+
+
+
+    <div class="container">
+        <div id="chartsContainer" style="width: 90%; padding-top: 20px;"></div>
+
+
+        <div class="metadata-container" style="display: none;">
+            <h2>File Metadata</h2>
+            <p><strong>Product Description:</strong> <span id="productDescription"></span></p>
+            <p><strong>Product Number:</strong> <span id="productNumber"></span></p>
+            <p><strong>R-State:</strong> <span id="rState"></span></p>
+            <p><strong>Serial Number:</strong> <span id="serialNumber"></span></p>
+            <p><strong>Station ID:</strong> <span id="stationId"></span></p>
+            <p><strong>Test Plan:</strong> <span id="testPlan"></span></p>
+            <p><strong>Test Type:</strong> <span id="testType"></span></p>
+            <p><strong>Criteria:</strong> <span id="criteria"></span></p>
+        </div>
+    </div>
+
+    <script src="static/menu.js"></script>
+    <script src="static/fileUpload.js"></script>
+</body>
+
+</html>

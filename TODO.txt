@@ -1,0 +1,18 @@
+! funkcja otwierania folderu w ```pim-blob-reader-live.html``` będzie działała na chrome i edge. Idk jak z innymi przeglądarkami
+
+- trzeba przetestować czy nie jest zablokowane otwieranie folderów 
+za pomocą funkcji ```window.showDirectoryPicker()```.
+jeżeli jest to na koncie Generic które będzie miał otworzoną podstonę PIM
+odblokować możliwość korzystania z tej funkcji lub napisać jakieś obejście.
+
+- w menu.js dodać faktyczny kontakt do supportu / help L3 czy coś
+
+- dodać jakiś limit wykresów w live tak aby strona po kilku godz działania
+nie zjadła całego RAM.
+
+#info:
+chrome dla window.showDirectoryPicker() może wymagać domeny https.
+nie jest gwarantowane działanie na http.
+
+strony nie używają żadnej DB ani nie przetwarzają danych osobowych.
+wystarczy je postawić na jakimkolwiek serweże i podpiąć pod domene https.
